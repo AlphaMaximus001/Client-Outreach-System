@@ -1,0 +1,279 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Client Outreach</title>
+<style>
+  :root { --bg:#f6f7f9; --card:#fff; --text:#1d2330; --muted:#6b7280; --line:#e5e7eb; --accent:#2563eb; --ok:#15803d; --bad:#b91c1c; --warn:#b45309; }
+  @media (prefers-color-scheme: dark) { :root { --bg:#0f1115; --card:#181b22; --text:#e6e8ee; --muted:#9aa1ad; --line:#2a2f3a; --accent:#60a5fa; --ok:#4ade80; --bad:#f87171; --warn:#fbbf24; } }
+  * { box-sizing:border-box; }
+  body { margin:0; font:14px/1.45 system-ui,-apple-system,Segoe UI,Roboto,sans-serif; background:var(--bg); color:var(--text); }
+  header { display:flex; align-items:center; gap:16px; padding:14px 20px; border-bottom:1px solid var(--line); background:var(--card); flex-wrap:wrap; }
+  header h1 { font-size:17px; margin:0; }
+  nav button { background:none; border:0; padding:8px 12px; color:var(--muted); cursor:pointer; font:inherit; border-radius:6px; }
+  nav button.active { color:var(--text); background:var(--bg); font-weight:600; }
+  main { max-width:1150px; margin:0 auto; padding:20px 16px; }
+  .grid { display:grid; gap:16px; grid-template-columns:repeat(auto-fit,minmax(320px,1fr)); }
+  .stats { display:grid; gap:12px; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); margin-bottom:16px; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:10px; padding:16px; }
+  .card h2 { font-size:15px; margin:0 0 12px; }
+  .stat b { display:block; font-size:24px; }
+  .stat span { color:var(--muted); font-size:12px; }
+  table { width:100%; border-collapse:collapse; }
+  th,td { text-align:left; padding:7px 6px; border-bottom:1px solid var(--line); vertical-align:top; }
+  th { color:var(--muted); font-weight:500; font-size:12px; }
+  .scroll { overflow-x:auto; }
+  input,textarea,select { width:100%; padding:7px 9px; border:1px solid var(--line); border-radius:6px; background:var(--bg); color:var(--text); font:inherit; }
+  textarea { min-height:70px; }
+  label { display:block; font-size:12px; color:var(--muted); margin:8px 0 3px; }
+  .btn { background:var(--accent); color:#fff; border:0; padding:8px 14px; border-radius:6px; cursor:pointer; font:inherit; }
+  .btn.ghost { background:none; color:var(--accent); border:1px solid var(--line); }
+  .btn.danger { background:none; color:var(--bad); border:1px solid var(--line); padding:4px 9px; }
+  .row { display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
+  .pill { display:inline-block; padding:1px 8px; border-radius:99px; font-size:12px; border:1px solid var(--line); }
+  .sent { color:var(--ok); } .failed { color:var(--bad); } .queued { color:var(--warn); }
+  .muted { color:var(--muted); }
+  .hidden { display:none; }
+  #toast { position:fixed; bottom:16px; right:16px; background:var(--text); color:var(--bg); padding:10px 14px; border-radius:8px; opacity:0; transition:.2s; max-width:420px; }
+  #toast.show { opacity:1; }
+  .two { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+  @media (max-width:600px){ .two { grid-template-columns:1fr; } }
+</style>
+</head>
+<body>
+<header>
+  <h1>🎁 Client Outreach</h1>
+  <nav id="tabs">
+    <button data-tab="overview" class="active">Overview</button>
+    <button data-tab="clients">Clients</button>
+    <button data-tab="festivals">Festivals</button>
+    <button data-tab="messages">Messages</button>
+    <button data-tab="settings">Settings</button>
+  </nav>
+  <span id="mode" class="pill" style="margin-left:auto"></span>
+</header>
+
+<main>
+  <!-- OVERVIEW -->
+  <section id="overview">
+    <div class="stats" id="stats"></div>
+    <div class="row" style="margin-bottom:16px">
+      <button class="btn" id="runNow">Send due messages now</button>
+      <button class="btn ghost" id="previewBtn">Preview what will be sent</button>
+      <span class="muted" id="runInfo"></span>
+    </div>
+    <div class="grid">
+      <div class="card"><h2>🎂 Upcoming birthdays</h2><div class="scroll"><table id="bdays"></table></div></div>
+      <div class="card"><h2>🎊 Upcoming festivals</h2><div class="scroll"><table id="fests"></table></div></div>
+    </div>
+    <div class="card hidden" id="previewCard" style="margin-top:16px"><h2>Preview</h2><div class="scroll"><table id="preview"></table></div></div>
+  </section>
+
+  <!-- CLIENTS -->
+  <section id="clients" class="hidden">
+    <div class="grid">
+      <div class="card">
+        <h2>Add client</h2>
+        <form id="clientForm">
+          <label>Full name *</label><input name="name" required>
+          <div class="two">
+            <div><label>Date of birth *</label><input name="dob" type="date" required></div>
+            <div><label>Phone (WhatsApp)</label><input name="phone" placeholder="+234..."></div>
+          </div>
+          <label>Email</label><input name="email" type="email">
+          <label>Address</label><input name="address">
+          <p class="muted">Age is calculated automatically from date of birth.</p>
+          <button class="btn">Save client</button>
+        </form>
+      </div>
+      <div class="card">
+        <h2>Import CSV</h2>
+        <p class="muted">Columns: <code>name, dob, address, phone, email</code>. Dates as YYYY-MM-DD or DD/MM/YYYY. Existing clients (same email or phone) are updated.</p>
+        <form id="csvForm" class="row">
+          <input type="file" name="file" accept=".csv,text/csv" required style="flex:1">
+          <button class="btn">Upload</button>
+        </form>
+        <p><a href="/api/clients/template.csv">Download CSV template</a></p>
+        <div id="csvResult"></div>
+      </div>
+    </div>
+    <div class="card" style="margin-top:16px">
+      <div class="row" style="justify-content:space-between"><h2>All clients</h2><input id="search" placeholder="Search…" style="max-width:240px"></div>
+      <div class="scroll"><table id="clientTable"></table></div>
+    </div>
+  </section>
+
+  <!-- FESTIVALS -->
+  <section id="festivals" class="hidden">
+    <div class="grid">
+      <div class="card">
+        <h2>Add festival / holiday</h2>
+        <form id="festForm">
+          <label>Name *</label><input name="name" required placeholder="e.g. Eid al-Fitr">
+          <label>Date *</label><input name="date" type="date" required>
+          <label><input type="checkbox" name="recurring" checked style="width:auto"> Same date every year</label>
+          <p class="muted">Untick for festivals whose date moves (Eid, Diwali, Easter…) and add each year's date.</p>
+          <label>Offer text</label><textarea name="offer" placeholder="e.g. 30% off all gift sets"></textarea>
+          <button class="btn">Add festival</button>
+        </form>
+      </div>
+      <div class="card"><h2>Festivals</h2><div class="scroll"><table id="festTable"></table></div></div>
+    </div>
+  </section>
+
+  <!-- MESSAGES -->
+  <section id="messages" class="hidden">
+    <div class="card">
+      <div class="row" style="justify-content:space-between"><h2>Message log</h2>
+        <select id="msgFilter" style="max-width:160px"><option value="">All</option><option>sent</option><option>failed</option><option>queued</option></select></div>
+      <div class="scroll"><table id="msgTable"></table></div>
+    </div>
+  </section>
+
+  <!-- SETTINGS -->
+  <section id="settings" class="hidden">
+    <form id="settingsForm" class="grid">
+      <div class="card">
+        <h2>Timing</h2>
+        <label>Show upcoming events within (days)</label><input name="dashboard_window_days">
+        <label>Send birthday offer N days before (0 = on the day)</label><input name="birthday_days_before">
+        <label>Send festival offer N days before</label><input name="festival_days_before">
+        <h2 style="margin-top:18px">Birthday offer</h2>
+        <label>Offer text ({offer})</label><textarea name="birthday_offer"></textarea>
+        <p class="muted">Placeholders: {first_name} {name} {age} {offer} {festival} {date} {business}</p>
+      </div>
+      <div class="card">
+        <h2>Birthday messages</h2>
+        <label>WhatsApp</label><textarea name="birthday_whatsapp"></textarea>
+        <label>Email subject</label><input name="birthday_email_subject">
+        <label>Email body</label><textarea name="birthday_email_body" style="min-height:120px"></textarea>
+      </div>
+      <div class="card">
+        <h2>Festival messages</h2>
+        <label>WhatsApp</label><textarea name="festival_whatsapp"></textarea>
+        <label>Email subject</label><input name="festival_email_subject">
+        <label>Email body</label><textarea name="festival_email_body" style="min-height:120px"></textarea>
+        <div style="margin-top:12px"><button class="btn">Save settings</button></div>
+      </div>
+    </form>
+  </section>
+</main>
+<div id="toast"></div>
+
+<script>
+const $ = s => document.querySelector(s);
+const esc = v => String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function toast(msg){ const t=$('#toast'); t.textContent=msg; t.classList.add('show'); clearTimeout(t._h); t._h=setTimeout(()=>t.classList.remove('show'),4000); }
+async function api(path, opts={}){
+  const r = await fetch(path, opts);
+  const body = await r.json().catch(()=>({}));
+  if(!r.ok) throw new Error(body.detail || r.statusText);
+  return body;
+}
+const json = (method, data) => ({method, headers:{'Content-Type':'application/json'}, body:JSON.stringify(data)});
+const when = d => d===0 ? '<b>Today</b>' : d===1 ? 'Tomorrow' : `in ${d} days`;
+
+// tabs
+document.querySelectorAll('#tabs button').forEach(b => b.onclick = () => {
+  document.querySelectorAll('#tabs button').forEach(x=>x.classList.toggle('active', x===b));
+  document.querySelectorAll('main > section').forEach(s=>s.classList.toggle('hidden', s.id!==b.dataset.tab));
+  ({overview:loadOverview, clients:loadClients, festivals:loadFestivals, messages:loadMessages, settings:loadSettings})[b.dataset.tab]();
+});
+
+async function loadOverview(){
+  const o = await api('/api/overview');
+  const ch = o.channels;
+  $('#mode').textContent = ch.dry_run ? 'DRY RUN — nothing is really sent' : `Live · auto-send daily ${ch.send_hour}:00 ${ch.timezone}`;
+  $('#mode').className = 'pill ' + (ch.dry_run ? 'queued' : 'sent');
+  const sentToday = o.messages_today.filter(m=>m.status==='sent').reduce((a,m)=>a+m.n,0);
+  const failedToday = o.messages_today.filter(m=>m.status==='failed').reduce((a,m)=>a+m.n,0);
+  $('#stats').innerHTML = [
+    [o.total_clients,'Clients'], [o.birthdays.length,`Birthdays (next ${o.window_days}d)`],
+    [o.festivals.length,`Festivals (next ${o.window_days}d)`], [sentToday,'Sent today'], [failedToday,'Failed today'],
+  ].map(([n,l])=>`<div class="card stat"><b>${n}</b><span>${l}</span></div>`).join('');
+  $('#bdays').innerHTML = '<tr><th>Client</th><th>Birthday</th><th>Turning</th><th>Contact</th></tr>' +
+    (o.birthdays.map(c=>`<tr><td>${esc(c.name)}</td><td>${esc(c.birthday)}<br><span class="muted">${when(c.days_until)}</span></td><td>${c.turning}</td><td>${c.phone?'📱 ':''}${c.email?'✉️':''}</td></tr>`).join('')
+     || '<tr><td colspan=4 class="muted">No birthdays coming up.</td></tr>');
+  $('#fests').innerHTML = '<tr><th>Festival</th><th>Date</th><th>Offer</th></tr>' +
+    (o.festivals.map(f=>`<tr><td>${esc(f.name)}</td><td>${esc(f.next_date)}<br><span class="muted">${when(f.days_until)}</span></td><td>${esc(f.offer)}</td></tr>`).join('')
+     || '<tr><td colspan=3 class="muted">No festivals coming up.</td></tr>');
+  const rs = o.run_status;
+  $('#runInfo').textContent = rs.running ? 'Sending in progress…' :
+    rs.last_result ? `Last run ${rs.last_finished}: ${rs.last_result.sent} sent, ${rs.last_result.failed} failed` : '';
+  $('#runNow').disabled = rs.running;
+  if (rs.running) setTimeout(loadOverview, 3000);
+}
+$('#runNow').onclick = async () => {
+  if(!confirm('Send all due birthday & festival messages now?')) return;
+  try { await api('/api/campaigns/run', {method:'POST'}); toast('Sending started'); setTimeout(loadOverview, 800); }
+  catch(e){ toast(e.message); }
+};
+$('#previewBtn').onclick = async () => {
+  const p = await api('/api/campaigns/preview');
+  $('#previewCard').classList.remove('hidden');
+  $('#preview').innerHTML = '<tr><th>Client</th><th>Channel</th><th>To</th><th>Message</th></tr>' +
+    (p.map(j=>`<tr><td>${esc(j.client)}</td><td>${j.channel}</td><td>${esc(j.to)}</td><td>${j.subject?`<b>${esc(j.subject)}</b><br>`:''}${esc(j.text).replace(/\n/g,'<br>')}</td></tr>`).join('')
+     || '<tr><td colspan=4 class="muted">Nothing is due to be sent right now.</td></tr>');
+};
+
+async function loadClients(){
+  const list = await api('/api/clients?q=' + encodeURIComponent($('#search').value));
+  $('#clientTable').innerHTML = '<tr><th>Name</th><th>Age</th><th>Date of birth</th><th>Phone</th><th>Email</th><th>Address</th><th></th></tr>' +
+    (list.map(c=>`<tr><td>${esc(c.name)}${c.opted_out?' <span class="pill failed">opted out</span>':''}</td><td>${c.age}</td><td>${esc(c.dob)}</td><td>${esc(c.phone)}</td><td>${esc(c.email)}</td><td>${esc(c.address)}</td>
+      <td class="row"><button class="btn danger" onclick="optOut(${c.id},${!c.opted_out})">${c.opted_out?'Opt in':'Opt out'}</button><button class="btn danger" onclick="delClient(${c.id})">Delete</button></td></tr>`).join('')
+     || '<tr><td colspan=7 class="muted">No clients yet.</td></tr>');
+}
+let st; $('#search').oninput = () => { clearTimeout(st); st = setTimeout(loadClients, 250); };
+$('#clientForm').onsubmit = async e => {
+  e.preventDefault();
+  try { await api('/api/clients', json('POST', Object.fromEntries(new FormData(e.target)))); e.target.reset(); toast('Client saved'); loadClients(); }
+  catch(err){ toast(err.message); }
+};
+$('#csvForm').onsubmit = async e => {
+  e.preventDefault();
+  try {
+    const r = await api('/api/clients/upload', {method:'POST', body:new FormData(e.target)});
+    $('#csvResult').innerHTML = `<p><b>${r.created}</b> added, <b>${r.updated}</b> updated, <b>${r.errors.length}</b> skipped.</p>` +
+      (r.errors.length ? '<table><tr><th>Row</th><th>Problem</th></tr>' + r.errors.map(x=>`<tr><td>${x.row}</td><td>${esc(x.error)}</td></tr>`).join('') + '</table>' : '');
+    e.target.reset(); loadClients();
+  } catch(err){ toast(err.message); }
+};
+window.delClient = async id => { if(confirm('Delete this client?')){ await api('/api/clients/'+id, {method:'DELETE'}); loadClients(); } };
+window.optOut = async (id, v) => { await api(`/api/clients/${id}/opt-out?opted_out=${v}`, {method:'POST'}); loadClients(); };
+
+async function loadFestivals(){
+  const list = await api('/api/festivals');
+  $('#festTable').innerHTML = '<tr><th>Name</th><th>Date</th><th>Yearly</th><th>Offer</th><th></th></tr>' +
+    list.map(f=>`<tr><td>${esc(f.name)}</td><td>${esc(f.date)}</td><td>${f.recurring?'Yes':'No'}</td><td>${esc(f.offer)}</td><td><button class="btn danger" onclick="delFest(${f.id})">Delete</button></td></tr>`).join('');
+}
+$('#festForm').onsubmit = async e => {
+  e.preventDefault();
+  const d = Object.fromEntries(new FormData(e.target)); d.recurring = !!d.recurring;
+  try { await api('/api/festivals', json('POST', d)); e.target.reset(); toast('Festival added'); loadFestivals(); }
+  catch(err){ toast(err.message); }
+};
+window.delFest = async id => { if(confirm('Delete this festival?')){ await api('/api/festivals/'+id, {method:'DELETE'}); loadFestivals(); } };
+
+async function loadMessages(){
+  const list = await api('/api/messages?status=' + $('#msgFilter').value);
+  $('#msgTable').innerHTML = '<tr><th>When</th><th>Client</th><th>Channel</th><th>Campaign</th><th>Status</th><th>Detail</th></tr>' +
+    (list.map(m=>`<tr><td>${esc(m.sent_at||m.created_at)}</td><td>${esc(m.client_name)}</td><td>${m.channel}</td><td>${esc(m.campaign)}</td><td class="${m.status}">${m.status}</td><td class="muted">${esc(m.detail)}</td></tr>`).join('')
+     || '<tr><td colspan=6 class="muted">No messages yet.</td></tr>');
+}
+$('#msgFilter').onchange = loadMessages;
+
+async function loadSettings(){
+  const s = await api('/api/settings');
+  for (const [k,v] of Object.entries(s)) { const el = $('#settingsForm [name="'+k+'"]'); if (el) el.value = v; }
+}
+$('#settingsForm').onsubmit = async e => {
+  e.preventDefault();
+  try { await api('/api/settings', json('PUT', Object.fromEntries(new FormData(e.target)))); toast('Settings saved'); }
+  catch(err){ toast(err.message); }
+};
+
+loadOverview();
+</script>
+</body>
+</html>
