@@ -50,6 +50,19 @@ When a template is configured, the WhatsApp text set on the dashboard isn't used
 ## Email setup
 Any SMTP provider works: Gmail with an app password, SendGrid, Mailgun, Amazon SES and so on. Set `SMTP_HOST/PORT/USER/PASSWORD` and `EMAIL_FROM`.
 
+## Deploy on Render
+The repo includes a `render.yaml` Blueprint. It sets the build and start commands, a `/healthz` health check, and a 1 GB disk mounted at `/data` for the database.
+
+1. In Render, choose **New → Blueprint** and pick this repo.
+2. Render asks for the values marked `sync: false`. Fill in at least `DASHBOARD_PASSWORD`, `TIMEZONE`, `BUSINESS_NAME` and `DEFAULT_COUNTRY_CODE`. You can leave the WhatsApp and SMTP fields blank for now and add them later under **Environment**.
+3. Deploy, then open the `onrender.com` URL. You can add your own domain under **Settings → Custom Domains**.
+4. Test with `DRY_RUN=true`. When everything looks right, change it to `false` under **Environment**.
+
+Notes:
+- **It needs a paid instance** (Starter, about $7/month). Free instances sleep after 15 minutes without visitors, so the daily send would never fire. They also can't have a disk, so the database would be wiped on every deploy.
+- **Deploys cause a short outage.** With a disk attached, Render stops the old instance before starting the new one, so expect a few seconds of downtime per deploy. It also runs only one instance, which is what this app needs.
+- **Back up the database.** Render takes daily disk snapshots, and you can also download `/data/outreach.db` from the service **Shell**.
+
 ## Deploy on Railway
 The repo includes `railway.json`. It sets the start command, a `/healthz` health check, restart-on-crash and a single instance.
 

@@ -1,0 +1,55 @@
+# Render Blueprint: New > Blueprint > pick this repo.
+# Needs a paid instance (Starter+): free instances sleep when idle (the daily
+# scheduler would never fire) and can't have a persistent disk.
+services:
+  - type: web
+    name: client-outreach
+    runtime: python
+    plan: starter
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT --workers 1 --proxy-headers --forwarded-allow-ips='*'
+    healthCheckPath: /healthz
+    disk:
+      name: data
+      mountPath: /data
+      sizeGB: 1
+    envVars:
+      - key: DATABASE_PATH
+        value: /data/outreach.db
+      - key: DRY_RUN
+        value: "true"
+      - key: SEND_HOUR
+        value: "9"
+      - key: MIN_DELAY_SECONDS
+        value: "1"
+      - key: MAX_DELAY_SECONDS
+        value: "2"
+      - key: SMTP_PORT
+        value: "587"
+      - key: DASHBOARD_USER
+        value: admin
+      # sync: false = Render asks you for these values when you create the Blueprint
+      - key: DASHBOARD_PASSWORD
+        sync: false
+      - key: TIMEZONE
+        sync: false
+      - key: BUSINESS_NAME
+        sync: false
+      - key: DEFAULT_COUNTRY_CODE
+        sync: false
+      - key: WHATSAPP_TOKEN
+        sync: false
+      - key: WHATSAPP_PHONE_NUMBER_ID
+        sync: false
+      - key: WHATSAPP_TEMPLATE_BIRTHDAY
+        sync: false
+      - key: WHATSAPP_TEMPLATE_FESTIVAL
+        sync: false
+      - key: SMTP_HOST
+        sync: false
+      - key: SMTP_USER
+        sync: false
+      - key: SMTP_PASSWORD
+        sync: false
+      - key: EMAIL_FROM
+        sync: false
