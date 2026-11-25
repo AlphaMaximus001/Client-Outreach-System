@@ -5,7 +5,7 @@ import threading
 from contextlib import asynccontextmanager
 from pathlib import Path
 
-from fastapi import BackgroundTasks, Depends, FastAPI, HTTPException, UploadFile
+from fastapi import BackgroundTasks, Depends, FastAPI, HTTPException, Request, UploadFile
 from fastapi.responses import FileResponse
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from pydantic import BaseModel
@@ -24,8 +24,8 @@ _stop = threading.Event()
 security = HTTPBasic(auto_error=False)
 
 
-def auth(creds: HTTPBasicCredentials | None = Depends(security)):
-    if not cfg.dashboard_password:
+def auth(request: Request, creds: HTTPBasicCredentials | None = Depends(security)):
+    if not cfg.dashboard_password or request.url.path == "/healthz":
         return
     ok = creds and secrets.compare_digest(creds.username, cfg.dashboard_user) \
         and secrets.compare_digest(creds.password, cfg.dashboard_password)
@@ -58,6 +58,13 @@ class FestivalIn(BaseModel):
     recurring: bool = True
     offer: str = ""
     active: bool = True
+
+
+@app.get("/healthz", include_in_schema=False)
+def healthz():
+    """Unauthenticated health check for the hosting platform."""
+    db.one("SELECT 1 AS ok")
+    return {"ok": True}
 
 
 @app.get("/", include_in_schema=False)

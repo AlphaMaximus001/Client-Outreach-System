@@ -50,9 +50,31 @@ When a template is configured, the WhatsApp text set on the dashboard isn't used
 ## Email setup
 Any SMTP provider works: Gmail with an app password, SendGrid, Mailgun, Amazon SES and so on. Set `SMTP_HOST/PORT/USER/PASSWORD` and `EMAIL_FROM`.
 
-## Deployment notes
-- Run **one** server process, because the daily scheduler runs inside the app. Keep it running with systemd, Docker, or a host like Railway or Render with a persistent disk for `outreach.db`.
-- Set `DASHBOARD_PASSWORD` and serve over HTTPS. The database holds personal data.
+## Deploy on Railway
+The repo includes `railway.json`. It sets the start command, a `/healthz` health check, restart-on-crash and a single instance.
+
+1. **New project:** in Railway, choose **New Project → Deploy from GitHub repo** and pick this repo.
+2. **Add a volume** so the database survives redeploys: right-click the service → **Attach Volume** → mount path `/data`.
+3. **Variables:** on the service's **Variables** tab, add at least:
+   ```
+   DATABASE_PATH=/data/outreach.db
+   DASHBOARD_USER=admin
+   DASHBOARD_PASSWORD=<a strong password>
+   TIMEZONE=Africa/Lagos
+   BUSINESS_NAME=Your Business
+   DEFAULT_COUNTRY_CODE=234
+   SEND_HOUR=9
+   DRY_RUN=true
+   ```
+   Add the WhatsApp and SMTP variables from `.env.example` too. Don't upload a `.env` file to Railway.
+4. **Public URL:** go to **Settings → Networking → Generate Domain** to get an HTTPS address for the dashboard. You can add your own domain there too.
+5. **Test, then go live:** add a test client with your own number and email, then click **Preview** and **Send due messages now**. When the dry-run looks right, set `DRY_RUN=false`.
+
+Notes:
+- **Keep it at 1 replica.** The daily scheduler runs inside the app, so a second copy would send every message twice. A volume also forces a single instance anyway.
+- **Missed sends catch up.** If the service restarts or redeploys after `SEND_HOUR`, it still runs that day's sends once. Anything already sent is never sent again.
+- **Back up regularly.** `outreach.db` holds personal data, so download a copy from the volume now and then.
+- The app also runs on any host that keeps a server running (Render with a disk, Fly.io, a VPS): `uvicorn app.main:app --host 0.0.0.0 --port $PORT --workers 1`.
 
 ## API
 `GET /api/overview` · `GET/POST /api/clients` · `PUT/DELETE /api/clients/{id}` · `POST /api/clients/{id}/opt-out` · `POST /api/clients/upload` · `GET/POST/PUT/DELETE /api/festivals` · `GET/PUT /api/settings` · `GET /api/campaigns/preview` · `POST /api/campaigns/run` · `GET /api/messages`. Interactive docs are at `/docs`.

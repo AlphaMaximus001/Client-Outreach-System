@@ -1,6 +1,7 @@
 """SQLite storage."""
 import sqlite3
 import threading
+from pathlib import Path
 from contextlib import contextmanager
 
 SCHEMA = """
@@ -70,6 +71,7 @@ DEFAULT_FESTIVALS = [
 class Database:
     def __init__(self, path: str):
         self.path = path
+        Path(path).parent.mkdir(parents=True, exist_ok=True)  # e.g. a mounted /data volume
         self._lock = threading.RLock()
         self._conn = sqlite3.connect(path, check_same_thread=False)
         self._conn.row_factory = sqlite3.Row

@@ -145,3 +145,16 @@ def test_api_smoke(tmp_path, monkeypatch):
     assert len(clients) == 2 and all("age" in c for c in clients)
     assert client.get("/").status_code == 200
     assert client.get("/api/campaigns/preview").status_code == 200
+
+
+def test_healthz_is_public(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setenv("DATABASE_PATH", str(tmp_path / "sub" / "h.db"))  # dir is created
+    monkeypatch.setenv("DASHBOARD_PASSWORD", "pw")
+    import importlib
+    from fastapi.testclient import TestClient
+    import app.main as m
+    importlib.reload(m)
+    client = TestClient(m.app)
+    assert client.get("/healthz").json() == {"ok": True}
+    assert client.get("/api/overview").status_code == 401
